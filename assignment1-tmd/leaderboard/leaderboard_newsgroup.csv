@@ -1,0 +1,7 @@
+score,comment,team_name,members,method
+0.0522,N/A,test-team,alsuhr-c|sahuguet|yoavartzi,maxent
+0.0522,N/A,test-team,alsuhr-c|sahuguet|yoavartzi,mlp
+0.0522,N/A,test-team,alsuhr-c|sahuguet|yoavartzi,perceptron
+0.0499,N/A,foundry-team,alsuhr-c|sahuguet|yoavartzi,mlp
+0.0494,N/A,foundry-team,alsuhr-c|sahuguet|yoavartzi,maxent
+0.0441,N/A,foundry-team,alsuhr-c|sahuguet|yoavartzi,perceptron

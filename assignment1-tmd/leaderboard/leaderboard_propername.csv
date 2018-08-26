@@ -1,0 +1,7 @@
+score,comment,team_name,members,method
+0.1723,N/A,test-team,alsuhr-c|sahuguet|yoavartzi,maxent
+0.1723,N/A,test-team,alsuhr-c|sahuguet|yoavartzi,mlp
+0.1723,N/A,test-team,alsuhr-c|sahuguet|yoavartzi,perceptron
+0.1723,N/A,foundry-team,alsuhr-c|sahuguet|yoavartzi,maxent
+0.1723,N/A,foundry-team,alsuhr-c|sahuguet|yoavartzi,perceptron
+0.0000,Err for propername/mlp,foundry-team,alsuhr-c|sahuguet|yoavartzi,mlp
