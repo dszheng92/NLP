@@ -23,7 +23,7 @@ class MaximumEntropyModel():
         self.num_y = max(Y_train) + 1
         self.num_x = X_train.shape[1]
         self.W = np.zeros(self.num_y*self.num_x)
-        self.W,f,d = opt.fmin_l_bfgs_b(func=self.cal_log, x0=self.W, fprime=self.cal_log_gradient, approx_grad=False, args=(X_train, Y_train, tune), iprint=1, maxiter=40)
+        self.W,f,d = opt.fmin_l_bfgs_b(func=self.cal_log, x0=self.W, fprime=self.cal_log_gradient, approx_grad=False, args=(X_train, Y_train, tune), iprint=1, maxiter=130)
 
     def cal_log(self,*args):
         W, X_train, Y_train, tune = args
@@ -57,28 +57,12 @@ class MaximumEntropyModel():
         pred_y = np.argmax(np.dot(model_input,ws.T),axis=1)
         return pred_y
 
-    def error_analysis(self,Y_dev,Y_dev_predicted ,newsData):
-        index = [i for i in range(Y_dev.shape[0])]
-        # build the confusion matrix
-        confusion_matrix=[[0 for i in range(20)]for j in range(20)]
-        for i in index:
-            confusion_matrix[Y_dev[i]][Y_dev_predicted[i]]+=1
-        print(np.array(confusion_matrix))
-        print(np.array(confusion_matrix)/np.sum(np.array(confusion_matrix)))
-        # print some error examples
-        selected = np.where(Y_dev!=Y_dev_predicted)[0]
-        selected = selected[:20]
-        for i in selected:
-            print("example ",i)
-            #print(dev_data[i])
-            print("actual: ", newsData.class_dict[Y_dev[i]], "predicted:", newsData.class_dict[Y_dev_predicted[i]])
-
 
 if __name__ == "__main__":
     #train_data, dev_data, test_data, data_type = load_data(sys.argv)
 
     newsData = Newsgroup_Feature_Extract()
-    X_train, Y_train, X_dev, Y_dev, X_test = newsData.bag_of_words(ngram_range=(1, 2), dim_used=10000)
+    X_train, Y_train, X_dev, Y_dev, X_test = newsData.bag_of_words(ngram_range=(1, 2), dim_used=30000)
     #Y_train = newsData.newsgroup_id_to_vector(Y_train)
 
     # Train the model using the training data.
@@ -89,12 +73,9 @@ if __name__ == "__main__":
     # print(Y_dev_predicted[:100])
     score = np.sum(Y_dev == Y_dev_predicted) / Y_dev.shape[0]
     print(score)
-
-    model.error_analysis(Y_dev, Y_dev_predicted ,newsData)
-
-    #Y_test = model.predict(X_test)
-    #Y_test_label = newsData.newsgroup_id_to_label(Y_test.tolist())
-    #res_se = pd.Series(Y_test_label)
-    #res_df = res_se.to_frame()
-    #res_df.to_csv("130max_iter100lr07.csv")
+    Y_test = model.predict(X_test)
+    Y_test_label = newsData.newsgroup_id_to_label(Y_test.tolist())
+    res_se = pd.Series(Y_test_label)
+    res_df = res_se.to_frame()
+    res_df.to_csv("130max_iter100lr07.csv")
 

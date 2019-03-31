@@ -1,3 +1,6 @@
+#Python3
+### Hidden Markov group created at 2018 April
+### Cornell Tech
 import numpy as np
 from loader import Loader
 from collections import defaultdict
@@ -260,7 +263,7 @@ if __name__ == '__main__':
     test_x, _ = loader.load_data('test')
     print('Data preprocessing done')
 
-    markov = HiddenMarkov(tags=loader.tags)
+    markov = HiddenMarkov(tags=loader.tag_vocab)
     #HiddenMarkov.train(words, label, method='linear', weights=(0.5, 0.25, 0.15, 0.1))
     markov.train(words, label, method='add1')
     print('Training finished')

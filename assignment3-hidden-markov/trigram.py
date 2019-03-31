@@ -1,3 +1,7 @@
+
+### Python 3
+### Hidden Markov group created at 2018 April
+### Cornell Tech
 import numpy as np
 from loader import Loader
 from collections import defaultdict
@@ -10,8 +14,10 @@ class HiddenMarkov:
                               for prev in self.tag_pair]
 
     def train(self, words, label, method, weights = None):
-        self.emissions = self._emissonprobability(words, label)
         self.transitions = self._transitionprobability(label, method, weights)
+
+        self.emissions = self._emissonprobability(words, label)
+        
 
     def _emissonprobability(self, words, label):
         emission = defaultdict(lambda: float('-inf'))
@@ -30,61 +36,66 @@ class HiddenMarkov:
 
     def _transitionprobability(self, label, method, weights):
         if method == 'add1':
-            transition = {}
-            dependency = defaultdict(int)
-            condition = defaultdict(int)
-            for tags in label:
-                for i, tag in enumerate(tags):
-                    if tag == '*':
-                        continue
-                    current, prev, prev2 = tags[i], tags[i - 1], tags[i - 2]
-                    dependency[(current, prev, prev2)] += 1
-                    condition[(prev, prev2)] += 1
-            threetag = [(current, prev, prev2) for current in self.tag_pair
-                        for prev in self.tag_pair
-                        for prev2 in self.tag_pair]
-            for tri in threetag:
-                current, prev, prev2 = tri
-                if (current, prev, prev2) in dependency:
-                    transition[(current, prev, prev2)] = np.log((dependency[(current, prev, prev2)] + 0.02) / (
-                            condition[(prev, prev2)] + 0.02 * len(condition)))
-                else:
-                    transition[(current, prev, prev2)] = np.log(
-                        0.02 / (condition[(prev, prev2)] + 0.02 * len(condition)))
-            return transition
-
+            return self._add_one_smooth(label)
         elif method == 'linear':
             assert weights is not None
-            transition = defaultdict(float)
-            cond2 = defaultdict(int)
-            dep2 = defaultdict(int)
-            cond1 = defaultdict(int)
-            dep1 = defaultdict(int)
-            cond0 = defaultdict(int)
-            for tags in label:
-                for i, tag in enumerate(tags):
-                    if tag == '*':
-                        continue
-                    current, prev, prev2 = tags[i], tags[i - 1], tags[i - 2]
-                    cond2[(current, prev, prev2)] += 1
-                    dep2[(prev, prev2)] += 1
-                    cond1[(current, prev)] += 1
-                    dep1[prev] += 1
-                    cond0[current] += 1
-            trigroup = [(current, prev, prev2) for current in self.tag_pair
-                        for prev in self.tag_pair
-                        for prev2 in self.tag_pair]
-            for tri in trigroup:
-                current, prev, prev2 = tri
-                if (current, prev, prev2) in cond2:
-                    transition[(current, prev, prev2)] += weights[2] * np.log(
-                        cond2[(current, prev, prev2)] / dep2[(prev, prev2)])
-                if (current, prev) in cond1:
-                    transition[(current, prev, prev2)] += weights[1] * np.log(cond1[(current, prev)] / dep1[prev])
-                if current in cond0:
-                    transition[(current, prev, prev2)] += weights[0] * np.log(cond0[current] / len(cond0))
-                if (current, prev, prev2) not in transition:
-                    transition[(current, prev, prev2)] = float('-inf')
+            return self._linear_smooth(label, weights)
+
+    def _add_one_smooth(self, label):
+        transition = {}
+        dependency = defaultdict(int)
+        condition = defaultdict(int)
+        for tags in label:
+            for i, tag in enumerate(tags):
+                if tag == '*':
+                    continue
+                current, prev, prev2 = tags[i], tags[i - 1], tags[i - 2]
+                dependency[(current, prev, prev2)] += 1
+                condition[(prev, prev2)] += 1
+        threetag = [(current, prev, prev2) for current in self.tag_pair
+                                  for prev in self.tag_pair
+                                  for prev2 in self.tag_pair]
+        k = 0.02
+        for tri in threetag:
+            current, prev, prev2 = tri
+            if (current, prev, prev2) in dependency:
+                transition[(current, prev, prev2)] = np.log((dependency[(current, prev, prev2)] + k) / (condition[(prev, prev2)] + k* len(condition)))
+            else:
+                transition[(current, prev, prev2)] = np.log(k/ (condition[(prev, prev2)] + k * len(condition)))
+        return transition
+
+
+    ## smoothing method: linear interpolation
+    def _linear_smooth(self, label, weights):
+        transition = defaultdict(float)
+        cond2 = defaultdict(int)
+        dep2 = defaultdict(int)
+        cond1 = defaultdict(int)
+        dep1 = defaultdict(int)
+        cond0 = defaultdict(int)
+        for tags in label:
+            for i, tag in enumerate(tags):
+                if tag == '*':
+                    continue
+                current, prev, prev2 = tags[i], tags[i - 1], tags[i - 2]
+                cond2[(current, prev, prev2)] += 1
+                dep2[(prev, prev2)] += 1
+                cond1[(current, prev)] += 1
+                dep1[prev] += 1
+                cond0[current] += 1
+        trigroup = [(current, prev, prev2) for current in self.tag_pair
+                                  for prev in self.tag_pair
+                                  for prev2 in self.tag_pair]
+        for tri in trigroup:
+            current, prev, prev2 = tri
+            if (current, prev, prev2) in cond2:
+                transition[(current, prev, prev2)] += weights[2] * np.log(cond2[(current, prev, prev2)] / dep2[(prev, prev2)])
+            if (current, prev) in cond1:
+                transition[(current, prev, prev2)] += weights[1] * np.log(cond1[(current, prev)] / dep1[prev])
+            if current in cond0:
+                transition[(current, prev, prev2)] += weights[0] * np.log(cond0[current] / len(cond0))
+            if (current, prev, prev2) not in transition:
+                transition[(current, prev, prev2)] = float('-inf')
         return transition
 
 
@@ -214,35 +225,33 @@ class HiddenMarkov:
         return correct / total
 
 def submission(prediction, filename='trigram'):
-    with open('./results/' + filename + '.csv', 'w') as f:
-        f.write('id,tag\n')
+    with open('./results/' + filename + '.csv', 'w') as Openfile:
+        Openfile.write('id,tag\n')
         i = 0
         for sequences in prediction:
             for tt in sequences:
                 if tt == '*' or tt == '<STOP>':
                     continue
-                f.write('{},"{}"\n'.format(i, tt))
+                Openfile.write('{},"{}"\n'.format(i, tt))
                 i += 1
 
 
 if __name__ == '__main__':
-    loader = Loader(ngram=3)
+    loader = Loader(n_gram=3)
     words, label = loader.load_data('train')
     dev_x, dev_y = loader.load_data('dev')
     test_x, _ = loader.load_data('test')
     print('Data preprocessing done')
 
-    markov = HiddenMarkov(tags=loader.tags)
+    markov = HiddenMarkov(tags=loader.tag_vocab)
     #HiddenMarkov.train(words, label, method='linear', weights=(0.6, 0.25, 0.15))
     markov.train(words, label, method='add1')
     print('Training finished')
 
-
     #dev_acc = HiddenMarkov.compAccu(dev_x, dev_y, decode='viterbi')
     #print('Vitervi dev accuracy', dev_acc)
-    dev_acc = markov.compAccu(dev_x, dev_y, decode='beam', k=3)
+    dev_acc = markov.compAccu(dev_x, dev_y, decode='beam', k=4)
     print('Beam dev accuracy', dev_acc)
-
 
     #viterbi_sub, viterbi_correct = markov.suboptimal(dev_x, dev_y, decode='viterbi')
     #print('Viterbi suboptimal percentage', viterbi_sub)
@@ -250,8 +259,6 @@ if __name__ == '__main__':
     #beam_sub, beam_correct = markov.suboptimal(dev_x, dev_y, decode='beam', k=3)
     #print('Beam suboptimal percentage', beam_sub)
     #print('Beam correct percentage', beam_correct)
-
-
     #prediction = markov.inference(test_x, decode='viterbi')
     #prediction = markov.inference(test_x, k = 3, decode='beam')
     #submission(prediction, filename='trigram_add_one_beam')

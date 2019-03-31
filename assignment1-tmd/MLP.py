@@ -106,23 +106,6 @@ class MultilayerPerceptronModel():
         return accu
 
 
-
-    def error_analysis(self,Y_dev,Y_dev_predicted,dev_data,propername):
-        index = [i for i in range(Y_dev.shape[0])]
-        # build the confusion matrix
-        confusion_matrix=[[0 for i in range(5)]for j in range(5)]
-        for i in index:
-            confusion_matrix[Y_dev[i]][Y_dev_predicted[i]]+=1
-        print(np.array(confusion_matrix))
-        print(np.array(confusion_matrix)/np.sum(np.array(confusion_matrix)))
-        # print some error examples
-        selected = np.where(Y_dev!=Y_dev_predicted)[0]
-        selected = selected[:20]
-        for i in selected:
-            print("example ",i)
-            print(dev_data[i])
-            print("actual: ",propername.id_to_class[Y_dev[i]],"predicted:",propername.id_to_class[Y_dev_predicted[i]])
-
 if __name__ == "__main__":
 
     propername = Propername_Feature_Extract()
@@ -138,23 +121,21 @@ if __name__ == "__main__":
     dy.renew_cg()
 
     #n_hidden = 2048
-    n_hidden = 40
+    n_hidden = 64
     n_input = X_train.shape[1]
     n_classes = Y_train1.shape[1]
 
     m = dy.ParameterCollection()
-    model = MultilayerPerceptronModel(m, n_input, n_hidden, n_classes, dy.tanh, dy.AdamTrainer, 4)
+    model = MultilayerPerceptronModel(m, n_input, n_hidden, n_classes, dy.tanh, dy.AdamTrainer, 10)
     #training_data = zip(X_train, Y_train1)
     #dev = zip(X_dev,Y_dev)
     model.train(X_train, Y_train1)
     Y_dev_predicted = model.predict(X_dev)
     score = np.sum(Y_dev == np.argmax(Y_dev_predicted.npvalue(), axis=0)) / Y_dev.shape[0]
     print(score)
-
-    model.error_analysis(Y_dev,Y_dev_predicted,dev_data,propername)
-    #Y_test = model.predict(X_test)
-    #Y_test1 = np.argmax(Y_test.npvalue(), axis=0)
-    #Y_test_label = propername.propername_id_to_label(Y_test1.tolist())
-    #res_se = pd.Series(Y_test_label)
-    #res_df = res_se.to_frame()
-    #res_df.to_csv("propmlp_iter100lr5prop.csv")
+    Y_test = model.predict(X_test)
+    Y_test1 = np.argmax(Y_test.npvalue(), axis=0)
+    Y_test_label = propername.propername_id_to_label(Y_test1.tolist())
+    res_se = pd.Series(Y_test_label)
+    res_df = res_se.to_frame()
+    res_df.to_csv("propmlp_iter100lr5prop.csv")

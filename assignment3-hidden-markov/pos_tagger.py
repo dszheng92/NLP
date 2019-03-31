@@ -26,9 +26,6 @@ def evaluate(data, model):
 class POSTagger():
     def __init__(self):
         """Initializes the tagger model parameters and anything else necessary. """
-
-
-
         pass
 
     def train(self, data):
@@ -39,16 +36,12 @@ class POSTagger():
             - N-gram models with varying N.
         
         """
-
-
         pass
 
     def sequence_probability(self, sequence, tags):
         """Computes the probability of a tagged sequence given the emission/transition
         probabilities.
         """
-
-
         return 0.
 
     def inference(self, sequence):
@@ -61,8 +54,6 @@ class POSTagger():
             - decoding with beam search
             - viterbi
         """
-
-
         return []
 
 
@@ -84,7 +75,7 @@ if __name__ == "__main__":
     # Predict tags for the test set
     test_predictions = []
     for sentence in test_data:
-        test_predictions.extend(pos_tagger.inference(sentence))
+        test_predictions.extend(pos_tagger.inference(sentence)
     
     # Write them to a file to update the leaderboard
     # TODO

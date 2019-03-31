@@ -1,3 +1,7 @@
+### Python 3
+### Hidden Markov group created at 2018 April
+### Cornell Tech
+
 import numpy as np
 from loader import Loader
 from collections import defaultdict
@@ -11,19 +15,18 @@ class HiddenMarkov:
         self.transitions = self._transitionprobability(label, method, weights)
 
     def _emissonprobability(self, words, label):
-        emission = defaultdict(lambda: float('-inf'))
         counts = defaultdict(int)
         numTags = defaultdict(int)
+        emission = defaultdict(lambda: float('-inf'))
         for line, tags in zip(words, label):
             for word, tag in zip(line, tags):
                 if tag == '*':
                     continue
                 counts[(word, tag)] += 1
                 numTags[tag] += 1
+        k=0 #1
         for word, tag in counts.keys():
-            #Add 1 smoothing
-            #emission[(word, tag)] = np.log(counts[(word, tag)]/ numTags[tag])
-            emission[(word, tag)] = np.log((counts[(word, tag)] + 0.1)/ (numTags[tag] + 0.1 * len(counts)))
+            emission[(word, tag)] = np.log((counts[(word, tag)] +k )/ (numTags[tag] + k * len(counts)))
         return emission
 
     def _transitionprobability(self, label, method, weights):
@@ -39,18 +42,17 @@ class HiddenMarkov:
                     dependency[(current, prev)] += 1
                     condition[prev] += 1
             doubleTag = [(current, prev) for current in self.states
-                         for prev in self.states]
+                            for prev in self.states]
+            k=0.01
             for pairs in doubleTag:
                 current, prev = pairs
                 if (current, prev) in dependency:
-                    transition[(current, prev)] = np.log(
-                        (dependency[(current, prev)] + 0.01) / (condition[prev] + 0.01 * len(condition)))
+                    transition[(current, prev)] = np.log((dependency[(current, prev)] + k) / (condition[prev] + k * len(condition)))
                 else:
-                    transition[(current, prev)] = np.log(0.01 / (condition[prev] + 0.01 * len(condition)))
-
+                    transition[(current, prev)] = np.log(k/ (condition[prev] +  k * len(condition)))
+            return transition
         elif method == 'linear':
             assert weights is not None
-            # Linear interpolation smoothing.
             transition = defaultdict(float)
             dep1 = defaultdict(int)
             cond1 = defaultdict(int)
@@ -64,7 +66,7 @@ class HiddenMarkov:
                     cond1[prev] += 1
                     dep0[current] += 1
             doublePair = [(current, prev) for current in self.states
-                          for prev in self.states]
+                                for prev in self.states]
             for pair in doublePair:
                 current, prev = pair
                 if (current, prev) in dep1:
@@ -78,7 +80,36 @@ class HiddenMarkov:
         return transition
 
 
-    def _beam_search(self, x, k):
+    def _linear_smooth(self, label, weights):
+        #Linear interpolation smoothing.
+        transition = defaultdict(float)
+        dep1 = defaultdict(int)
+        cond1 = defaultdict(int)
+        dep0 = defaultdict(int)
+        for tags in label:
+            for i, tag in enumerate(tags):
+                if tag == '*':
+                    continue
+                current, prev = tags[i], tags[i - 1]
+                dep1[(current, prev)] += 1
+                cond1[prev] += 1
+                dep0[current] += 1
+        doublePair = [(current, prev) for current in self.states
+                            for prev in self.states]
+        for pair in doublePair:
+            current, prev = pair
+            if (current, prev) in dep1:
+                transition[(current, prev)] += weights[1] * dep1[(current, prev)] / cond1[prev]
+            if current in dep0:
+                transition[(current, prev)] += weights[0] * dep0[current] / len(dep0)
+            if (current, prev) not in transition:
+                transition[(current, prev)] = float('-inf')
+            else:
+                transition[(current, prev)] = np.log(transition[(current, prev)])
+        return transition
+
+
+    def beam_search(self, x, k):
         prediction = []
         for c, line in enumerate(x):
             trellis = [['*'] for _ in range(k)]
@@ -147,22 +178,14 @@ class HiddenMarkov:
         return prediction
 
     def inference(self, x, decode, k=None):
-        """Tags a sequence with part of speech tags.
-
-                You should implement different kinds of inference (suggested as separate
-                methods):
-
-                    - greedy decoding
-                    - decoding with beam search
-                    - viterbi
-        """
+        ## Predict the tag with different mdecode mode
         if decode == 'beam':
             assert k is not None
-            prediction = self._beam_search(x, k)
+            prediction = self.beam_search(x, k)
         elif decode == 'viterbi':
             prediction = self._viterbi(x)
         else:
-            raise NotImplementedError('Method not implemented')
+            raise NotImplementedError('This type pf method is not implemented, try beam or viterbi')
         return prediction
 
 
@@ -206,35 +229,31 @@ class HiddenMarkov:
         return correct / total
 
     def submission(prediction, filename='bigram'):
-        with open('./results/' + filename + '.csv', 'w') as f:
-            f.write('id,tag\n')
+        with open('./results/' + filename + '.csv', 'w') as Openfile:
+            Openfile.write('id,tag\n')
             i = 0
             for sequences in prediction:
                 for tt in sequences:
                     if tt == '*' or tt == '<STOP>':
                         continue
-                    f.write('{},"{}"\n'.format(i, tt))
+                    Openfile.write('{},"{}"\n'.format(i, tt))
                     i += 1
 
 
 if __name__ == '__main__':
-    loader = Loader(ngram=2)
+    loader = Loader(n_gram=2)
     words, label = loader.load_data('train')
     dev_x, dev_y = loader.load_data('dev')
     test_x, _ = loader.load_data('test')
     print('Data preprocessing done')
-
-    markov = HiddenMarkov(tags=loader.tags)
+    markov = HiddenMarkov(tags=loader.tag_vocab)
     #markov.train(words, label, method='linear', weights = (0.65, 0.35))
     markov.train(words, label, method='add1')
     print('Training finished')
-
-
-    dev_acc = markov.compAccu(dev_x, dev_y, decode='viterbi')
-    print('Vitervi dev accuracy', dev_acc)
-    #dev_acc = markov.compAccu(dev_x, dev_y, decode='beam', k=3)
-    #print('Beam dev accuracy', dev_acc)
-
+    #dev_acc = markov.compAccu(dev_x, dev_y, decode='viterbi')
+    #print('Vitervi dev accuracy', dev_acc)
+    dev_acc = markov.compAccu(dev_x, dev_y, decode='beam', k=4)
+    print('Beam dev accuracy', dev_acc)
 
     #viterbi_sub, viterbi_correct = markov.suboptimal(dev_x, dev_y, decode='viterbi')
     #print('Viterbi suboptimal percentage', viterbi_sub)
@@ -242,7 +261,6 @@ if __name__ == '__main__':
     #beam_sub, beam_correct = markov.suboptimal(dev_x, dev_y, decode='beam', k=3)
     #print('Beam suboptimal percentage', beam_sub)
     #print('Beam correct percentage', beam_correct)
-
-#    prediction = markov.inference(test_x, decode='viterbi')
-#    submission(prediction, filename='trigram_add_one_viterbi')
+    #prediction = markov.inference(test_x, decode='viterbi')
+    #submission(prediction, filename='trigram_add_one_viterbi')
 

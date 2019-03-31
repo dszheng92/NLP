@@ -45,8 +45,6 @@ class Newsgroup_Feature_Extract:
         X_dev = vectorizer.transform(texts_dev).toarray()
         X_test = vectorizer.transform(texts_test).toarray()
         self.vocab_data = vectorizer.vocabulary_
-        #dictionary = self.class_dict
-        #labels = self.vocab_label
         return X_train, Y_train, X_dev, Y_dev, X_test
 
 
@@ -103,7 +101,7 @@ class Newsgroup_Feature_Extract:
     def _stem_tokenize(self, art):
         stemTokens = [stemmer.stem(n) for n in word_tokenize(art) if n.isalpha()]
         return stemTokens
-
+ 
     def newsgroup_id_to_label(self, Y_id):
         Y_test=[]
         for i in range(len(Y_id)):
@@ -122,11 +120,10 @@ if __name__ == '__main__':
     newsData = Newsgroup_Feature_Extract()
     X_train, Y_train, X_dev, Y_dev, X_test = newsData.bag_of_words(ngram_range=(1, 2), dim_used=5000)
 
-    #print('dictionary', dictionary, 'labels',  labels )
-    #print(X_train.shape)
-   # print("Y before:", Y_train)
-    #Y_train = newsData.newsgroup_id_to_vector(Y_train)
-    #print('Y_train:', Y_train)
+    print(X_train.shape)
+    print("Y before:", Y_train)
+    Y_train = newsData.newsgroup_id_to_vector(Y_train)
+    print('Y_train:', Y_train)
 
 
 

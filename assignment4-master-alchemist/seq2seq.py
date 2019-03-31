@@ -7,7 +7,7 @@ import string
 translator = str.maketrans('', '', string.punctuation)
 import _dynet as dy
 dyparams = dy.DynetParams()
-dyparams.set_mem(1000)
+dyparams.set_mem(4000)
 dyparams.set_random_seed(666)
 dyparams.set_autobatch(True)
 dyparams.init()

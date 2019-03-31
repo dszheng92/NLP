@@ -71,6 +71,22 @@ class MaximumEntropyModel():
         pred_y = np.argmax(np.dot(model_input,ws.T),axis=1)
         return pred_y
 
+    def error_analysis(self,Y_dev,Y_dev_predicted,dev_data,propername):
+        index = [i for i in range(Y_dev.shape[0])]
+        # build the confusion matrix
+        confusion_matrix=[[0 for i in range(5)]for j in range(5)]
+        for i in index:
+            confusion_matrix[Y_dev[i]][Y_dev_predicted[i]]+=1
+        print(np.array(confusion_matrix))
+        print(np.array(confusion_matrix)/np.sum(np.array(confusion_matrix)))
+        # print some error examples
+        selected = np.where(Y_dev!=Y_dev_predicted)[0]
+        selected = selected[:20]
+        for i in selected:
+            print("example ",i)
+            print(dev_data[i])
+            print("actual: ",propername.id_to_class[Y_dev[i]],"predicted:",propername.id_to_class[Y_dev_predicted[i]])
+
 
 if __name__ == "__main__":
     #train_data, dev_data, test_data, data_type = load_data(sys.argv)
@@ -82,9 +98,8 @@ if __name__ == "__main__":
         "dev/dev_data.csv", "dev/dev_labels.csv",
         "test/test_data.csv")
     X_train, X_dev, X_test = propername.propername_featurize(train_data, dev_data, test_data, ngram_range=(1, 4))
+
     Y_train, Y_dev = propername.propername_label_to_id(train_labels, dev_labels)
-
-
     #Y_train = propername.propername_id_to_vector(Y_train)
 
     # Train the model using the training data.

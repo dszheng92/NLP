@@ -102,54 +102,32 @@ class MultilayerPerceptronModel():
 
         return accu
 
-    def error_analysis(self, Y_dev, Y_dev_predicted, newsData):
-        index = [i for i in range(Y_dev.shape[0])]
-        # build the confusion matrix
-        confusion_matrix = [[0 for i in range(20)] for j in range(20)]
-        for i in index:
-            confusion_matrix[Y_dev[i]][Y_dev_predicted[i]] += 1
-        print(np.array(confusion_matrix))
-        print(np.array(confusion_matrix) / np.sum(np.array(confusion_matrix)))
-        # print some error examples
-        selected = np.where(Y_dev != Y_dev_predicted)[0]
-        selected = selected[:20]
-        for i in selected:
-            print("example ", i)
-            print(newsData.class_dict[i])
-            print("actual: ", newsData.class_dict[Y_dev[i]], "predicted:", newsData.class_dict[Y_dev_predicted[i]])
-
-
-
 
 if __name__ == "__main__":
 
     newsData = Newsgroup_Feature_Extract()
-    X_train, Y_train, X_dev, Y_dev, X_test = newsData.bag_of_words(ngram_range=(1, 2), dim_used=10000)
+    X_train, Y_train, X_dev, Y_dev, X_test = newsData.bag_of_words(ngram_range=(1, 2), dim_used=15000)
     Y_train1 = newsData.newsgroup_id_to_vector(Y_train)
 
 
     dy.renew_cg()
 
     #n_hidden = 2048
-    n_hidden = 40
+    n_hidden = 150
     n_input = X_train.shape[1]
     n_classes = Y_train1.shape[1]
 
     m = dy.ParameterCollection()
-    model = MultilayerPerceptronModel(m, n_input, n_hidden, n_classes, dy.tanh, dy.AdamTrainer, 4)
-
-    training_data = zip(X_train, Y_train1)
-    dev = zip(X_dev,Y_dev)
+    model = MultilayerPerceptronModel(m, n_input, n_hidden, n_classes, dy.tanh, dy.AdamTrainer, 5)
+    #training_data = zip(X_train, Y_train1)
+    #dev = zip(X_dev,Y_dev)
     model.train(X_train, Y_train1)
     Y_dev_predicted = model.predict(X_dev)
     score = np.sum(Y_dev == np.argmax(Y_dev_predicted.npvalue(), axis=0)) / Y_dev.shape[0]
     print(score)
-
-    model.error_analysis(Y_dev, np.argmax(Y_dev_predicted.npvalue(), axis=0) , newsData)
-
-    #Y_test = model.predict(X_test)
-    #Y_test1 = np.argmax(Y_test.npvalue(), axis=0)
-    #Y_test_label = newsData.newsgroup_id_to_label(Y_test1.tolist())
-    #res_se = pd.Series(Y_test_label)
-    #res_df = res_se.to_frame()
-    #res_df.to_csv("Newsmlp_iter100lr10news.csv")
+    Y_test = model.predict(X_test)
+    Y_test1 = np.argmax(Y_test.npvalue(), axis=0)
+    Y_test_label = newsData.newsgroup_id_to_label(Y_test1.tolist())
+    res_se = pd.Series(Y_test_label)
+    res_df = res_se.to_frame()
+    res_df.to_csv("Newsmlp_iter100lr10news.csv")
